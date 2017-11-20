@@ -44,7 +44,8 @@ public class MainActivity extends Activity implements computerVisionUtilities.Ba
     private ImageView iv2;
     private long startTime;
     private long endTime;
-    private int counter = 0;
+    private int firstFrameCounter = 0;
+    private int secondFrameCounter = 0;
     private Button btn, btn2, btn3;
     private FFmpegFrameGrabber grabber, grabberTwo;
     private OpenCVFrameGrabber fg;
@@ -83,9 +84,9 @@ public class MainActivity extends Activity implements computerVisionUtilities.Ba
                     btn.setText("FRAME #1 SHOWN");
                     startTime = android.os.SystemClock.uptimeMillis();
                     firstFrame = grabber.grabImage();
+                    firstFrame = grabber.grabImage();
                     bmpOne = convertToBitmap.convert(firstFrame);
                     iv.setImageBitmap(bmpOne);
-                    counter++;
                     endTime = android.os.SystemClock.uptimeMillis();
                     Log.d("ONCLICK", "Timing Frame 1: " + (endTime - startTime));
                 }catch(Exception e){
@@ -104,9 +105,7 @@ public class MainActivity extends Activity implements computerVisionUtilities.Ba
                     startTime = android.os.SystemClock.uptimeMillis();
                     secondFrame = grabberTwo.grabImage();
                     bmpTwo = convertToBitmapTwo.convert(secondFrame);
-                    //iv.setEnabled(false);
                     iv.setImageBitmap(bmpTwo);
-                    counter++;
                     endTime = android.os.SystemClock.uptimeMillis();
                     Log.d("ONCLICK", "Timing Frame 2: " + (endTime - startTime));
                 }catch(Exception e){
@@ -125,28 +124,27 @@ public class MainActivity extends Activity implements computerVisionUtilities.Ba
 
     }
 
-//https://stackoverflow.com/questions/9129037/javacv-blob-detection
+
+    //This function does all the imaging
     public Bitmap doSubtraction(Mat one, Mat two){
         opencv_core.Mat greyOne = new opencv_core.Mat();
         opencv_core.Mat greyTwo = new opencv_core.Mat();
         opencv_core.Mat diffImg = new opencv_core.Mat();
         opencv_core.Mat threImg = new opencv_core.Mat();
+
         opencv_core.MatVector keyMat = new opencv_core.MatVector();
-        Log.d("DOSubtraction", "Started");
 
         //Convert to grayscale
         cvtColor(one, greyOne, COLOR_BGR2GRAY);
         //
         //return bmpOne;
         cvtColor(two, greyTwo, COLOR_BGR2GRAY);
+
         //Take the difference
         opencv_core.absdiff(greyOne, greyTwo, diffImg);
 
-        //return bmpOne;
-        //Bilateral Filter on the difference image TAKES LONG
+        //Bilateral Filter on the difference image TAKES VERY LONG
         //bilateralFilter(diffImg, biLaImg, 11, 30, 17);
-
-        //Threshold the image
 
         CvMemStorage mem;
 
@@ -154,25 +152,32 @@ public class MainActivity extends Activity implements computerVisionUtilities.Ba
 
         threshold(diffImg, threImg, 50, 255, THRESH_BINARY);
         mem = cvCreateMemStorage();
-        //cvFindContours(threImg, mem, contours, sizeof(CvContour.class), CV_RETR_CCOMP, CV_CHAIN_APPROX_SIMPLE, cvPoint(0,0));
         findContours(threImg, keyMat, CV_RETR_CCOMP, CV_CHAIN_APPROX_SIMPLE);
+
         //WILL RETURN CORRECT NUMBER!!!!!!!!!!!!
         Log.d("KEYPOINT SIZE", "SIZE: " + keyMat.size());
+
+        //UNCOMMENT THE NEXT TWO LINES TO CONVERT AND RETURN
         //showFrame = converterToMat.convert(keypointMat);
         //bmpThree = convertToBitmap.convert(showFrame);
         return bmpThree;
     }
 
+
     //Callback from background worker
+    //Not being used, but I do have access whenever I need it
+
+    //To call, just initialize a background worker in onCreate()
+    // and then add the method calls to the seperate class
+    //TODO: test to see if doing everything is faster in the background
     @Override
     public void onTaskfinished(Bitmap bmp, Bitmap bmp2, long timingStart, long timingEnd){
-
-        //setImageBitmap(bmp, bmp2);
-
         Log.d(TAG, "Finished: " + (timingEnd - timingStart));
     }
 
 
+    //Function to initialize the frame grabber objects?
+    //TODO ^^^
     public void initFrameGrab(){
         File file = new File(Environment.getExternalStorageDirectory() + "/Video/", "test.mp4");
         grabber = new FFmpegFrameGrabber(file);
@@ -182,6 +187,7 @@ public class MainActivity extends Activity implements computerVisionUtilities.Ba
             grabber.setFormat("MP4");
             grabber.setVideoCodec(avcodec.AV_CODEC_ID_H264);
             grabber.start();
+            grabber.grabImage();
             grabberTwo.setAudioChannels(0);
             grabberTwo.setFormat("MP4");
             grabberTwo.setVideoCodec(avcodec.AV_CODEC_ID_H264);
