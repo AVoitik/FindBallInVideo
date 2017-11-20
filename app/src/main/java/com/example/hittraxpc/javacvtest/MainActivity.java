@@ -156,6 +156,7 @@ public class MainActivity extends Activity implements computerVisionUtilities.Ba
         mem = cvCreateMemStorage();
         //cvFindContours(threImg, mem, contours, sizeof(CvContour.class), CV_RETR_CCOMP, CV_CHAIN_APPROX_SIMPLE, cvPoint(0,0));
         findContours(threImg, keyMat, CV_RETR_CCOMP, CV_CHAIN_APPROX_SIMPLE);
+        //WILL RETURN CORRECT NUMBER!!!!!!!!!!!!
         Log.d("KEYPOINT SIZE", "SIZE: " + keyMat.size());
         //showFrame = converterToMat.convert(keypointMat);
         //bmpThree = convertToBitmap.convert(showFrame);
