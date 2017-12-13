@@ -1,39 +1,20 @@
 <?xml version="1.0" encoding="utf-8"?>
 
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-xmlns:tools="http://schemas.android.com/tools"
-android:layout_width="match_parent"
-android:layout_height="match_parent"
-android:orientation="vertical"
-tools:context="com.example.hittraxpc.javacvtest.MainActivity" >
-
-    <Button
-        android:id="@+id/next"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:id="@+id/linLay"
+    tools:context="com.example.hittraxpc.javacvtest.MainActivity" >
+<ImageView
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:id="@+id/imgV"/>
+    <TextView
+        android:id="@+id/textView"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Grabber1"/>
-    <Button
-        android:id="@+id/next2"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Grabber2"/>
-    <Button
-        android:id="@+id/diffBtn"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Calculate Difference"/>
-
-    <ImageView
-        android:id="@+id/imgV"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content" />
-    <ImageView
-        android:id="@+id/imgV2"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content" />
-    <ImageView
-        android:id="@+id/imgV3"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content" />
+        android:text="" />
 
 </LinearLayout>
