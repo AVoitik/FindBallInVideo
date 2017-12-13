@@ -30,7 +30,7 @@ public class blobStruct {
      */
     public blobStruct(){
         for(int i = 0; i < 4; i++){
-            contours[i] = new contourStruct();
+            this.contours[i] = new contourStruct();
         }
     }
 
@@ -49,7 +49,7 @@ public class blobStruct {
 
         //instantiating new contourStructs
         for(int i = 0; i < 4; i++){
-            contours[i] = new contourStruct();
+            this.contours[i] = new contourStruct();
         }
     }
 
@@ -82,7 +82,7 @@ public class blobStruct {
         Log.d(TAG, "FrameStart set to" + frameStart);
     }
 
-    public void setContourNum(int num){
+    public void setContourNum(long num){
         this.contourNum = num;
         Log.d(TAG, "ContourNum set to" + contourNum);
     }

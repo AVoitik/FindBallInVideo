@@ -73,13 +73,16 @@ public class MainActivity extends Activity {
     private int firstBallFrame;
     private Mat matOne = new Mat();
     private Boolean notFound = true;
-    private Long compare;
+    private MatVector compare;
     private int iAmCounting = 0;
     private opencv_core.Mat bbImg = new opencv_core.Mat();
     private int foundNum = 0;
     private int totalCount = 0;
     private int dontContinue = 0;
     private int blobCounter = 0;
+    private int lastFrameWithBall;
+    private int badAreaCount = 0;
+    private boolean once = true;
 
     private boolean drawMe = true;
 
@@ -136,7 +139,7 @@ public class MainActivity extends Activity {
             if(totalCount < 30) {
                     compare = doSubtraction(converterToMat.convert(firstFrame), converterToMatTwo.convert(secondFrame));
                     Log.d("COMPARENUM: ", "Frame Num: " + firstFrameCounter + " Compare: " + compare);
-                    if ((compare > 1) && (compare < 5)) {
+                    if (((compare.size() - badAreaCount) > 1) && ((compare.size() - badAreaCount) < 5)) {
                         iAmCounting++;
                         if (iAmCounting > 2) {
                             totalCount++;
@@ -146,22 +149,30 @@ public class MainActivity extends Activity {
                                 firstBall = true;
                                 firstBallFrame = firstFrameCounter;
                                 tv.setText("First found in frame number: " + firstFrameCounter + " in " + (endTime - startTime) + " ms");
-                                blob[blobCounter].setFrameStart(firstBallFrame);
-                                blob[blobCounter].setFrameNum(firstFrameCounter);
-                                blob[blobCounter].setContourNum(compare);
 
                             }
                             foundNum++;
                             Log.d(TAG, "FoundCount: " + foundNum);
 
+                            blob[blobCounter].setFrameStart(firstBallFrame);
+                            blob[blobCounter].setFrameNum(firstFrameCounter);
+                            blob[blobCounter].setContourNum(compare.size() - badAreaCount);
+                            blob[blobCounter].setEndFrame(false);
+                            lastFrameWithBall = firstFrameCounter;
+                            createCStruct(compare, blob[blobCounter]);
+                            blobCounter++;
 
                             //Debugging to save image to internal storage
-                            //bmpOne = convertToBitmap.convert(showFrame);
-                            //new ImageSaver(getBaseContext()).
-                                        //setFileName(foundNum + "_pic.png").
-                                        //setDirectoryName("images").
-                                        //save(bmpOne);
-
+                            /*if(once == true){
+                                showFrame = converterToMat.convert(blob[blobCounter - 1].contours[0].getContourMatrix());
+                                bmpOne = convertToBitmap.convert(showFrame);
+                                //iv.setImageBitmap(bmpOne);
+                                new ImageSaver(getBaseContext()).
+                                setFileName(foundNum + "_pic.png").
+                                setDirectoryName("images").
+                                save(bmpOne);
+                                once = false;
+                            }*/
 
                             iAmCounting--;
                         }
@@ -179,8 +190,8 @@ public class MainActivity extends Activity {
                     if(dontContinue > 3){
                         endTime = SystemClock.uptimeMillis();
                         Log.d("FINAL PROCESSING TIME", "Time (in ms): " + (endTime - startTime));
-                        Log.d("BLOBSTRUCT", "Blob 0: " + blob[0].getFrameStart());
-                        Log.d("BLOBSTRUCT", "Blob 1: " + blob[1].getFrameNum());
+                        Log.d("LASTFRAME", "Last: " + totalCount);
+                        Log.d("LASTWITHBALL", "Last Frame: " + lastFrameWithBall);
                         break;
                     }
                     firstFrame = doWork(firstFrame, grabber);
@@ -196,6 +207,23 @@ public class MainActivity extends Activity {
 
     }
 
+    private void createCStruct(MatVector mv, blobStruct blStr){
+
+
+        Rect cropROI = null;
+        for(int i = 0; i < mv.size(); i++){
+
+            cropROI = new Rect(boundingRect(mv.get(i)).x() - 15, boundingRect(mv.get(i)).y() - 7, boundingRect(mv.get(i)).width() + 25,  boundingRect(mv.get(i)).height() + 20);
+            Mat drawMat = new Mat(bbImg, cropROI);
+            blStr.contours[i].setHeight(boundingRect(mv.get(i)).height() + 20);
+            blStr.contours[i].setWidth(boundingRect(mv.get(i)).width() + 25);
+            blStr.contours[i].setX(boundingRect(mv.get(i)).x() - 15);
+            blStr.contours[i].setY(boundingRect(mv.get(i)).y() - 7);
+            blStr.contours[i].setContourMatrix(drawMat);
+            blStr.contours[i].logAllData(i);
+        }
+
+    }
     public Frame doWork(Frame fr, FFmpegFrameGrabber grab){
 
         Bitmap bmp;
@@ -210,44 +238,23 @@ public class MainActivity extends Activity {
     }
 
     //This function does all the imaging
-    public Long doSubtraction(Mat one, Mat two){
+    public MatVector doSubtraction(Mat one, Mat two){
         Mat greyOne = new Mat();
         Mat greyTwo = new Mat();
         Mat diffImg = new Mat();
         Mat threImg = new Mat();
         Mat displayME = new Mat();
         int area;
-        int badAreaCount = 0;
+        badAreaCount = 0;
+
         MatVector keyMat = new MatVector();
         cvtColor(one, greyOne, COLOR_BGR2GRAY);
         cvtColor(two, greyTwo, COLOR_BGR2GRAY);
         opencv_core.absdiff(greyOne, greyTwo, diffImg);
-        threshold(diffImg, threImg, 50, 255, THRESH_BINARY);
-        showFrame = converterToMat.convert(threImg);
+        threshold(diffImg, threImg, 37, 255, THRESH_BINARY);
+
         findContours(threImg, keyMat, CV_RETR_CCOMP, CV_CHAIN_APPROX_SIMPLE);
-
-        /*Find Directon*/
-        if(keyMat.size() > 1){
-            for(int i = 0; i < keyMat.size(); i++){
-                area = boundingRect(keyMat.get(i)).height() * boundingRect(keyMat.get(i)).width();
-                Log.d("CONTOURAREA", "Area of Contour #" + (i + 1) + ": " + area);
-                if(area < 400){
-                    badAreaCount++;
-                }
-            }
-        }
-
-        //if(drawMe == true){
-            //if(keyMat.size() > 1){
-                //drawContours(bbImg, keyMat, 1, new Scalar(0.0, 0.0, 255.0, 2.0));
-                //drawContours(bbImg, keyMat, 1, new Scalar(0.0, 0.0, 255.0, 2.0));
-                //drawMe = false;
-                //Log.d(TAG, "Bounding Rect: H ->" + Integer.toString(boundingRect(keyMat.get(0)).height()));
-                //Log.d(TAG, "Bounding Rect: W ->" + Integer.toString(boundingRect(keyMat.get(0)).width()));
-                //Log.d(TAG, "Bounding Rect: X ->" + Integer.toString(boundingRect(keyMat.get(0)).x()));
-                //Log.d(TAG, "Bounding Rect: Y ->" + Integer.toString(boundingRect(keyMat.get(0)).y()));
-            //}
-        //}
+        greyOne.copyTo(bbImg);
 
         greyOne.release();
         greyTwo.release();
@@ -255,7 +262,7 @@ public class MainActivity extends Activity {
         threImg.release();
         displayME.release();
 
-        return keyMat.size() - badAreaCount;
+        return keyMat;
     }
 
 
@@ -272,17 +279,13 @@ public class MainActivity extends Activity {
             grabber.setFormat("MP4");
             grabber.setVideoCodec(avcodec.AV_CODEC_ID_H264);
             grabber.start();
-            //grabber.grabImage();
             grabberTwo.setAudioChannels(0);
             grabberTwo.setFormat("MP4");
             grabberTwo.setVideoCodec(avcodec.AV_CODEC_ID_H264);
             grabberTwo.start();
-            //prog.setVisibility(View.INVISIBLE);
-            //Log.d(TAG, "STARTED SUCCESSFULLY, Frames: " + fg.getLengthInFrames());
         }catch(Exception e){
             e.printStackTrace();
             Log.d(TAG, "INIT FAILED");
-            //prog.setVisibility(View.INVISIBLE);
         }
     }
 
