@@ -79,10 +79,11 @@ public class MainActivity extends Activity {
     private int foundNum = 0;
     private int totalCount = 0;
     private int dontContinue = 0;
+    private int blobCounter = 0;
 
     private boolean drawMe = true;
 
-    private blobStruct blob;
+    private blobStruct[] blob;
 
 
 
@@ -113,7 +114,7 @@ public class MainActivity extends Activity {
             //DO SOMETHING HERE TO SHOW SOMETHING IS WRONG
         }
         firstFrameCounter = 2;
-        blob = new blobStruct();
+        blob = new blobStruct[20];
 
         //Log.d(TAG, "Initial 2 frames grabbed from first");
 
@@ -139,11 +140,16 @@ public class MainActivity extends Activity {
                         iAmCounting++;
                         if (iAmCounting > 2) {
                             totalCount++;
+                            blob[blobCounter] = new blobStruct();
                             if (firstBall == false) {
                                 endTime = SystemClock.uptimeMillis();
                                 firstBall = true;
                                 firstBallFrame = firstFrameCounter;
                                 tv.setText("First found in frame number: " + firstFrameCounter + " in " + (endTime - startTime) + " ms");
+                                blob[blobCounter].setFrameStart(firstBallFrame);
+                                blob[blobCounter].setFrameNum(firstFrameCounter);
+                                blob[blobCounter].setContourNum(compare);
+
                             }
                             foundNum++;
                             Log.d(TAG, "FoundCount: " + foundNum);
@@ -173,6 +179,8 @@ public class MainActivity extends Activity {
                     if(dontContinue > 3){
                         endTime = SystemClock.uptimeMillis();
                         Log.d("FINAL PROCESSING TIME", "Time (in ms): " + (endTime - startTime));
+                        Log.d("BLOBSTRUCT", "Blob 0: " + blob[0].getFrameStart());
+                        Log.d("BLOBSTRUCT", "Blob 1: " + blob[1].getFrameNum());
                         break;
                     }
                     firstFrame = doWork(firstFrame, grabber);

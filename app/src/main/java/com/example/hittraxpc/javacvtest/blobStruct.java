@@ -8,7 +8,7 @@ public class blobStruct {
     private static String TAG = "blobStruct";
 
     //Number of contours per frame
-    private int contourNum;
+    private long contourNum;
 
     //Actual frame number
     private int frameNum;
@@ -41,7 +41,7 @@ public class blobStruct {
             whether it is the last frame or not
     Post : a blobStruct with an empty contourStruct()
      */
-    public blobStruct(int frameNum, int frameStart, int contourNum, boolean isEndFrame){
+    public blobStruct(int frameNum, int frameStart, long contourNum, boolean isEndFrame){
         this.frameNum = frameNum;
         this.frameStart = frameStart;
         this.contourNum = contourNum;
@@ -63,7 +63,7 @@ public class blobStruct {
         return frameStart;
     }
 
-    public int getContourNum(){
+    public long getContourNum(){
         return contourNum;
     }
 
