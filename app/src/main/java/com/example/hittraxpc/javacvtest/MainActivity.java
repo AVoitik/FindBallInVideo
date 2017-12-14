@@ -67,7 +67,9 @@ public class MainActivity extends Activity {
     private Frame firstFrame = new Frame();
     private Frame secondFrame = new Frame();
     private Frame showFrame = new Frame();
+    private Frame showFrameTwo = new Frame();
     private static Bitmap bmpOne;
+    private static Bitmap bmpTwo;
     private Bitmap bmpThree;
     private boolean firstBall = false;
     private int firstBallFrame;
@@ -83,6 +85,7 @@ public class MainActivity extends Activity {
     private int lastFrameWithBall;
     private int badAreaCount = 0;
     private boolean once = true;
+    private Mat thresh = new Mat();
 
     private boolean drawMe = true;
 
@@ -149,7 +152,9 @@ public class MainActivity extends Activity {
                                 firstBall = true;
                                 firstBallFrame = firstFrameCounter;
                                 tv.setText("First found in frame number: " + firstFrameCounter + " in " + (endTime - startTime) + " ms");
-
+                                showFrame = converterToMat.convert(thresh);
+                                bmpOne = convertToBitmap.convert(showFrame);
+                                iv.setImageBitmap(bmpOne);
                             }
                             foundNum++;
                             Log.d(TAG, "FoundCount: " + foundNum);
@@ -189,6 +194,7 @@ public class MainActivity extends Activity {
                     //totalCount++;
                     if(dontContinue > 3){
                         endTime = SystemClock.uptimeMillis();
+                        blob[blobCounter - 1].setEndFrame(true);
                         Log.d("FINAL PROCESSING TIME", "Time (in ms): " + (endTime - startTime));
                         Log.d("LASTFRAME", "Last: " + totalCount);
                         Log.d("LASTWITHBALL", "Last Frame: " + lastFrameWithBall);
@@ -207,20 +213,39 @@ public class MainActivity extends Activity {
 
     }
 
+
     private void createCStruct(MatVector mv, blobStruct blStr){
 
 
+        int dirX = 0;
+
         Rect cropROI = null;
         for(int i = 0; i < mv.size(); i++){
+            if(((boundingRect(mv.get(i)).x() > 40) && (boundingRect(mv.get(i)).x() < 1240))&&(((boundingRect(mv.get(i)).y() > 30) && (boundingRect(mv.get(i)).y() < 660)))){
+                cropROI = new Rect(boundingRect(mv.get(i)).x() - 15, boundingRect(mv.get(i)).y() - 7, boundingRect(mv.get(i)).width() + 25,  boundingRect(mv.get(i)).height() + 20);
+                Mat drawMat = new Mat(bbImg, cropROI);
+                if(i != 0){
 
-            cropROI = new Rect(boundingRect(mv.get(i)).x() - 15, boundingRect(mv.get(i)).y() - 7, boundingRect(mv.get(i)).width() + 25,  boundingRect(mv.get(i)).height() + 20);
-            Mat drawMat = new Mat(bbImg, cropROI);
-            blStr.contours[i].setHeight(boundingRect(mv.get(i)).height() + 20);
-            blStr.contours[i].setWidth(boundingRect(mv.get(i)).width() + 25);
-            blStr.contours[i].setX(boundingRect(mv.get(i)).x() - 15);
-            blStr.contours[i].setY(boundingRect(mv.get(i)).y() - 7);
-            blStr.contours[i].setContourMatrix(drawMat);
-            blStr.contours[i].logAllData(i);
+                    if((abs((boundingRect(mv.get(i)).width()) - boundingRect(mv.get(i - 1)).width()) < 50)) {
+                        if(boundingRect(mv.get(i - 1)).x() > boundingRect(mv.get(i)).x()){
+                            blStr.contours[i - 1].setDirection(contourStruct.Direction.FORWARD);
+
+                        }else if((abs((boundingRect(mv.get(i)).width()) - boundingRect(mv.get(i - 1)).width()) >= 50)) {
+                            blStr.contours[i - 1].setDirection(contourStruct.Direction.BACKWARD);
+                        }
+                    }
+                    Log.d("CONTOUR", "BlobNum: " + blobCounter + "\nContourNum: " + i);
+                    blStr.contours[i - 1].logAllData(i);
+                }
+
+                blStr.contours[i].setHeight(boundingRect(mv.get(i)).height() + 20);
+                blStr.contours[i].setWidth(boundingRect(mv.get(i)).width() + 25);
+                blStr.contours[i].setX(boundingRect(mv.get(i)).x() - 15);
+                blStr.contours[i].setY(boundingRect(mv.get(i)).y() - 7);
+                blStr.contours[i].setContourMatrix(drawMat);
+
+            }
+
         }
 
     }
@@ -237,12 +262,15 @@ public class MainActivity extends Activity {
         }
     }
 
+
+
     //This function does all the imaging
     public MatVector doSubtraction(Mat one, Mat two){
         Mat greyOne = new Mat();
         Mat greyTwo = new Mat();
         Mat diffImg = new Mat();
         Mat threImg = new Mat();
+        Mat newThreImg = new Mat();
         Mat displayME = new Mat();
         int area;
         badAreaCount = 0;
@@ -251,11 +279,28 @@ public class MainActivity extends Activity {
         cvtColor(one, greyOne, COLOR_BGR2GRAY);
         cvtColor(two, greyTwo, COLOR_BGR2GRAY);
         opencv_core.absdiff(greyOne, greyTwo, diffImg);
+        opencv_core.absdiff(diffImg, greyTwo, newThreImg);
         threshold(diffImg, threImg, 37, 255, THRESH_BINARY);
-
+        newThreImg.copyTo(thresh);
         findContours(threImg, keyMat, CV_RETR_CCOMP, CV_CHAIN_APPROX_SIMPLE);
         greyOne.copyTo(bbImg);
 
+
+        /*if(firstBall == true){
+            showFrame = converterToMat.convert(one);
+            bmpOne = convertToBitmap.convert(showFrame);
+            new ImageSaver(getBaseContext()).
+                    setFileName(foundNum + "_ONEpic.png").
+                    setDirectoryName("images").
+                    save(bmpOne);
+
+            showFrameTwo = converterToMatTwo.convert(two);
+            bmpTwo = convertToBitmap.convert(showFrameTwo);
+            new ImageSaver(getBaseContext()).
+                    setFileName(foundNum + "_TWOpic.png").
+                    setDirectoryName("images").
+                    save(bmpTwo);
+        }*/
         greyOne.release();
         greyTwo.release();
         diffImg.release();
