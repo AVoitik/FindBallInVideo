@@ -124,7 +124,6 @@ public class MainActivity extends Activity {
 
         //Log.d(TAG, "Initial 2 frames grabbed from first");
 
-
         while(notFound){
             //Log.d("FRAMECOUNT", "First: " + firstFrameCounter + " Second: " + secondFrameCounter);
                 //Log.d("IAMCOUNTING", "Num: " + iAmCounting);
@@ -139,7 +138,7 @@ public class MainActivity extends Activity {
                     e.printStackTrace();
                 }
 
-            if(totalCount < 30) {
+            if(totalCount < 20) {
                     compare = doSubtraction(converterToMat.convert(firstFrame), converterToMatTwo.convert(secondFrame));
                     Log.d("COMPARENUM: ", "Frame Num: " + firstFrameCounter + " Compare: " + compare);
                     if (((compare.size() - badAreaCount) > 1) && ((compare.size() - badAreaCount) < 5)) {
@@ -152,7 +151,10 @@ public class MainActivity extends Activity {
                                 firstBall = true;
                                 firstBallFrame = firstFrameCounter;
                                 tv.setText("First found in frame number: " + firstFrameCounter + " in " + (endTime - startTime) + " ms");
-                                showFrame = converterToMat.convert(thresh);
+
+                                Rect crop = new Rect(boundingRect(compare.get(0)).x() - 15, boundingRect(compare.get(0)).y() - 7, boundingRect(compare.get(0)).width() + 25, boundingRect(compare.get(0)).height() + 20);
+                                Mat drawMat = new Mat(thresh, crop);
+                                showFrame = converterToMat.convert(drawMat);
                                 bmpOne = convertToBitmap.convert(showFrame);
                                 iv.setImageBitmap(bmpOne);
                             }
@@ -220,34 +222,38 @@ public class MainActivity extends Activity {
         int dirX = 0;
 
         Rect cropROI = null;
-        for(int i = 0; i < mv.size(); i++){
-            if(((boundingRect(mv.get(i)).x() > 40) && (boundingRect(mv.get(i)).x() < 1240))&&(((boundingRect(mv.get(i)).y() > 30) && (boundingRect(mv.get(i)).y() < 660)))){
-                cropROI = new Rect(boundingRect(mv.get(i)).x() - 15, boundingRect(mv.get(i)).y() - 7, boundingRect(mv.get(i)).width() + 25,  boundingRect(mv.get(i)).height() + 20);
-                Mat drawMat = new Mat(bbImg, cropROI);
-                if(i != 0){
+        Log.d("CONTOURNUMBER", "#: " + mv.size());
+        if(mv.size() < 10) {
+            for (int i = 0; i < mv.size(); i++) {
+                Log.d("CONTOUR", "BlobNum: " + blobCounter + "\nContourNum: " + i);
+                if (((boundingRect(mv.get(i)).x() > 40) && (boundingRect(mv.get(i)).x() < 1240)) && (((boundingRect(mv.get(i)).y() > 30) && (boundingRect(mv.get(i)).y() < 660)))) {
+                    cropROI = new Rect(boundingRect(mv.get(i)).x() - 15, boundingRect(mv.get(i)).y() - 7, boundingRect(mv.get(i)).width() + 25, boundingRect(mv.get(i)).height() + 20);
+                    Mat drawMat = new Mat(bbImg, cropROI);
+                    if (i != 0) {
+                        if ((abs((boundingRect(mv.get(i)).width()) - boundingRect(mv.get(i - 1)).width()) < 80)) {
+                            if (boundingRect(mv.get(i - 1)).x() > boundingRect(mv.get(i)).x()) {
+                                blStr.contours[i - 1].setDirection(contourStruct.Direction.FORWARD);
 
-                    if((abs((boundingRect(mv.get(i)).width()) - boundingRect(mv.get(i - 1)).width()) < 50)) {
-                        if(boundingRect(mv.get(i - 1)).x() > boundingRect(mv.get(i)).x()){
-                            blStr.contours[i - 1].setDirection(contourStruct.Direction.FORWARD);
-
-                        }else if((abs((boundingRect(mv.get(i)).width()) - boundingRect(mv.get(i - 1)).width()) >= 50)) {
-                            blStr.contours[i - 1].setDirection(contourStruct.Direction.BACKWARD);
+                            } else if (boundingRect(mv.get(i - 1)).x() < boundingRect(mv.get(i)).x()) {
+                                blStr.contours[i - 1].setDirection(contourStruct.Direction.BACKWARD);
+                            } else {
+                                blStr.contours[i - 1].setDirection(contourStruct.Direction.NEUTRAL);
+                            }
                         }
+
+                        blStr.contours[i - 1].logAllData(i);
                     }
-                    Log.d("CONTOUR", "BlobNum: " + blobCounter + "\nContourNum: " + i);
-                    blStr.contours[i - 1].logAllData(i);
+
+                    blStr.contours[i].setHeight(boundingRect(mv.get(i)).height() + 20);
+                    blStr.contours[i].setWidth(boundingRect(mv.get(i)).width() + 25);
+                    blStr.contours[i].setX(boundingRect(mv.get(i)).x() - 15);
+                    blStr.contours[i].setY(boundingRect(mv.get(i)).y() - 7);
+                    blStr.contours[i].setContourMatrix(drawMat);
+
                 }
 
-                blStr.contours[i].setHeight(boundingRect(mv.get(i)).height() + 20);
-                blStr.contours[i].setWidth(boundingRect(mv.get(i)).width() + 25);
-                blStr.contours[i].setX(boundingRect(mv.get(i)).x() - 15);
-                blStr.contours[i].setY(boundingRect(mv.get(i)).y() - 7);
-                blStr.contours[i].setContourMatrix(drawMat);
-
             }
-
         }
-
     }
     public Frame doWork(Frame fr, FFmpegFrameGrabber grab){
 
@@ -279,12 +285,18 @@ public class MainActivity extends Activity {
         cvtColor(one, greyOne, COLOR_BGR2GRAY);
         cvtColor(two, greyTwo, COLOR_BGR2GRAY);
         opencv_core.absdiff(greyOne, greyTwo, diffImg);
-        opencv_core.absdiff(diffImg, greyTwo, newThreImg);
+        //opencv_core.absdiff(diffImg, greyTwo, newThreImg);
         threshold(diffImg, threImg, 37, 255, THRESH_BINARY);
-        newThreImg.copyTo(thresh);
-        findContours(threImg, keyMat, CV_RETR_CCOMP, CV_CHAIN_APPROX_SIMPLE);
+        threImg.copyTo(thresh);
         greyOne.copyTo(bbImg);
+        findContours(threImg, keyMat, CV_RETR_CCOMP, CV_CHAIN_APPROX_SIMPLE);
+        Log.d("CONTOUR NUMBER", "NUM: " + keyMat.size());
+        for(int i = 0; i < keyMat.size(); i++){
+            if((boundingRect(keyMat.get(i)).height() * boundingRect(keyMat.get(i)).width()) < 500){
 
+                badAreaCount++;
+            }
+        }
 
         /*if(firstBall == true){
             showFrame = converterToMat.convert(one);
@@ -316,7 +328,7 @@ public class MainActivity extends Activity {
     public void initFrameGrab(){
 
         //PUT THE NAME OF THE VIDEO IN HERE
-        File file = new File(Environment.getExternalStorageDirectory() + "/Video/", "test.mp4");
+        File file = new File(Environment.getExternalStorageDirectory() + "/Video/", "V_20171017_154716.mp4");
         grabber = new FFmpegFrameGrabber(file);
         grabberTwo = new FFmpegFrameGrabber(file);
         try {

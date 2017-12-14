@@ -14,7 +14,7 @@ public class blobStruct {
     private int frameNum;
 
     //Contour List
-    public contourStruct[] contours = new contourStruct[4];
+    public contourStruct[] contours = new contourStruct[10];
 
     //Frame start num
     private int frameStart;
@@ -29,7 +29,7 @@ public class blobStruct {
     Post : blob struct initialized to default values
      */
     public blobStruct(){
-        for(int i = 0; i < 4; i++){
+        for(int i = 0; i < 10; i++){
             this.contours[i] = new contourStruct();
         }
     }
@@ -48,7 +48,7 @@ public class blobStruct {
         this.isEndFrame = isEndFrame;
 
         //instantiating new contourStructs
-        for(int i = 0; i < 4; i++){
+        for(int i = 0; i < 10; i++){
             this.contours[i] = new contourStruct();
         }
     }

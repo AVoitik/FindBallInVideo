@@ -15,7 +15,7 @@ public class contourStruct {
     //Enum for ease of direction
     enum Direction
     {
-        FORWARD, BACKWARD;
+        FORWARD, BACKWARD, NEUTRAL;
     }
 
     private Direction dir;
